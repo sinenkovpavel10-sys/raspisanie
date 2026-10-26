@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Расписание уроков</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1e3b2f">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;600&family=Unbounded:wght@600&display=swap">
+<style>
+:root{--bg:#eef1ec;--card:#fff;--tx:#1c2822;--mut:#5d6c63;--ln:#d9dfd8;--board:#1e3b2f;--chalk:#f3f1e7;--y:#e9b824;--ac:#2c6b4f;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1512;--card:#17201b;--tx:#e6eee8;--mut:#8fa196;--ln:#26332b;--board:#1f4435;--y:#f2c94c;--ac:#7fd1a6;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1512;--card:#17201b;--tx:#e6eee8;--mut:#8fa196;--ln:#26332b;--board:#1f4435;--y:#f2c94c;--ac:#7fd1a6;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px);background:var(--bg)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 "Golos Text",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:88px}
+#app{max-width:520px;margin:0 auto;padding:16px}
+h3{margin:22px 2px 8px;font-size:15px;font-weight:600;color:var(--mut)}
+.mut,small{color:var(--mut)}
+.hero{background:var(--board);color:var(--chalk);border-radius:24px;padding:22px 22px 24px;margin-bottom:12px}
+.hero .lb{opacity:.7;font-size:15px}
+.hero .subj{font:600 24px/1.2 Unbounded,"Arial Black",system-ui,sans-serif;margin:6px 0 18px;overflow-wrap:anywhere}
+.hero .room{font:600 clamp(56px,22vw,88px)/1 Unbounded,"Arial Black",system-ui,sans-serif;letter-spacing:-.02em;overflow-wrap:anywhere}
+.hero .room.sm{font-size:40px}
+.hero .cap{opacity:.7;margin:4px 0 18px}
+.hero .tm{font-weight:600;font-size:18px}
+.hero .left{color:var(--y);font-weight:600;margin-top:2px}
+.hero .pri{background:var(--chalk);color:var(--board);border-color:var(--chalk);margin-top:8px}
+.now{border-left:4px solid var(--y);background:var(--card);padding:10px 14px;border-radius:6px 14px 14px 6px;margin-bottom:12px}
+.row{display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:center;padding:12px 4px;border-bottom:1px solid var(--ln)}
+.row b{color:var(--mut);font-weight:600}
+.row em{font:600 18px Unbounded,system-ui,sans-serif;font-style:normal;color:var(--ac)}
+.row.past{opacity:.4}
+.row.cur{box-shadow:inset 4px 0 0 var(--y);padding-left:12px}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--ln);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav button{flex:1;padding:14px 4px;border:0;border-top:3px solid transparent;margin-top:-1px;background:none;color:var(--mut);font:600 14px "Golos Text",system-ui,sans-serif}
+nav button.on{color:var(--ac);border-top-color:var(--y)}
+.tabs{display:flex;gap:6px}
+.tabs button{flex:1;padding:10px 0;border:1px solid var(--ln);border-radius:10px;background:var(--card);color:var(--tx);font:600 15px "Golos Text",system-ui,sans-serif}
+.tabs button.on{background:var(--board);border-color:var(--board);color:var(--chalk)}
+.ed{display:grid;grid-template-columns:48px 1fr 78px;gap:8px;align-items:center;margin-bottom:8px}
+.n{display:flex;flex-direction:column;align-items:center;line-height:1.2}
+.n small{font-size:11px}
+.bl{display:grid;grid-template-columns:30px 1fr 1fr;gap:8px;align-items:center;margin-bottom:8px}
+input{width:100%;min-width:0;padding:12px;border:1px solid var(--ln);border-radius:10px;background:var(--card);color:var(--tx);font:16px "Golos Text",system-ui,sans-serif}
+textarea{width:100%;margin-top:12px;padding:12px;border:1px solid var(--ln);border-radius:10px;background:var(--card);color:var(--tx);font:13px/1.4 ui-monospace,Menlo,monospace}
+.btns{display:flex;gap:8px;margin-top:14px}
+.btns button,.pri{flex:1;padding:12px 16px;border:1px solid var(--ln);border-radius:10px;background:var(--card);color:var(--tx);font:600 15px "Golos Text",system-ui,sans-serif}
+.pri{background:var(--board);border-color:var(--board);color:var(--chalk)}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<nav><button data-t="now">Сейчас</button><button data-t="week">Расписание</button><button data-t="bells">Звонки</button><button data-t="xfer">Перенос</button></nav>
+<script>
+const app=document.getElementById('app');
+const DAYS=['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+const ACC=['в воскресенье','в понедельник','во вторник','в среду','в четверг','в пятницу','в субботу'];
+const SH=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+const BL=[['08:30','09:15'],['09:25','10:10'],['10:25','11:10'],['11:25','12:10'],['12:20','13:05'],['13:15','14:00'],['14:10','14:55'],['15:05','15:50']];
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const mn=t=>{const p=String(t||'').split(':');return p.length==2?(+p[0])*60+(+p[1]):NaN};
+const hm=x=>{x=Math.max(0,Math.min(1439,x));return String(Math.floor(x/60)).padStart(2,'0')+':'+String(x%60).padStart(2,'0')};
+const dur=x=>x<60?x+' мин':Math.floor(x/60)+' ч'+(x%60?' '+x%60+' мин':'');
+const P=a=>a.map(x=>({subj:x[0],room:x[1]}));
+const DEF={1:P([['Разговоры о важном','529'],['География','531'],['Биология','529'],['Литература','424'],['ОБЗР','208'],['История','311'],['Основы программирования на C++','418'],['Программирование','418']]),2:P([['Геометрия','201'],['Геометрия','201'],['Физика','209'],['Химия','528'],['Английский язык','529'],['Практикум по информатике','422'],['Информатика','422'],['Информатика','422']]),3:P([['Физическая культура','сп.зал'],['Литература','424'],['Алгебра и начала мат.анализа','201'],['Алгебра и начала мат.анализа','201'],['Вероятность и статистика','201'],['Обществознание','318'],['Физика','208'],['Английский язык','104']]),4:P([['История','106к., 1к.'],['Теоретические основы физики','208'],['Урок-секция','сп.зал'],['Программирование автономных систем','210'],['Русский язык','424'],['Русский язык','424'],['Физика','208'],['Алгебра и начала мат.анализа','201']]),5:P([['Теоретические основы математики','201'],['Теоретические основы математики','201'],['Информатика','422'],['Информатика','422'],['Алгебра и начала мат.анализа','201'],['Алгебра и начала мат.анализа','201'],['Геометрия','201'],['Физика','208']])};
+function load(){try{const r=JSON.parse(localStorage.getItem('sched_v2'));if(r&&Array.isArray(r.bells)&&r.bells.length&&r.days)return r}catch(e){}return{bells:BL.map(b=>({s:b[0],e:b[1]})),days:DEF}}
+function save(){try{localStorage.setItem('sched_v2',JSON.stringify(S))}catch(e){}}
+let S=load(),tab='now',ed=new Date().getDay()||1;
+
+function lessons(d){
+  return (S.days[d]||[]).map((r,i)=>{
+    const b=S.bells[i];
+    if(!r||!b||!String(r.subj||'').trim())return null;
+    const s=mn(b.s),e=mn(b.e);
+    return isNaN(s)||isNaN(e)?null:{i,s,e,subj:r.subj.trim(),room:String(r.room||'').trim(),t:b.s+'–'+b.e};
+  }).filter(Boolean).sort((a,b)=>a.s-b.s);
+}
+function calc(){
+  const now=new Date(),nm=now.getHours()*60+now.getMinutes(),d=now.getDay(),today=lessons(d);
+  const cur=today.find(l=>l.s<=nm&&nm<l.e);
+  let next=today.find(l=>l.s>nm),when=null;
+  if(!next)for(let k=1;k<=7;k++){const dd=(d+k)%7,ls=lessons(dd);if(ls.length){next=ls[0];when={k,dd};break}}
+  return{nm,d,today,cur,next,when};
+}
+function vNow(){
+  if(![0,1,2,3,4,5,6].some(d=>lessons(d).length))
+    return '<div class="hero"><div class="subj">Расписание пустое</div><p>Добавьте уроки на вкладке «Расписание».</p><button class="pri" data-go="week">Заполнить расписание</button></div>';
+  const c=calc();let h='';
+  if(c.cur)h+=`<div class="now">Сейчас идёт ${esc(c.cur.subj)}${c.cur.room?', каб. '+esc(c.cur.room):''}<br><small>ещё ${dur(c.cur.e-c.nm)}</small></div>`;
+  if(c.next){
+    const w=c.when;
+    const tm=w?(w.k==1?'Завтра':ACC[w.dd][0].toUpperCase()+ACC[w.dd].slice(1))+', '+c.next.t:c.next.t;
+    h+=`<section class="hero"><div class="lb">Следующий урок</div><div class="subj">${esc(c.next.subj)}</div><div class="room${c.next.room.length>3?' sm':''}">${esc(c.next.room||'—')}</div><div class="cap">кабинет</div><div class="tm">${tm}</div>${w?'':`<div class="left">через ${dur(c.next.s-c.nm)}</div>`}</section>`;
+  }
+  const over=!c.today.length||c.today[c.today.length-1].e<=c.nm;
+  let day=c.d,list=c.today,title=DAYS[c.d];
+  if(over&&c.when){day=c.when.dd;list=lessons(day);title=(c.when.k==1?'Завтра, ':'')+DAYS[day]}
+  h+='<h3>'+title+'</h3>';
+  h+=list.length?list.map(l=>`<div class="row${day==c.d&&l.e<=c.nm?' past':''}${day==c.d&&c.cur&&c.cur.i==l.i?' cur':''}"><b>${l.i+1}</b><div>${esc(l.subj)}<br><small>${l.t}</small></div><em>${esc(l.room)}</em></div>`).join(''):'<p class="mut">Уроков нет.</p>';
+  return h;
+}
+function vWeek(){
+  const rows=S.bells.map((b,i)=>{const r=(S.days[ed]||[])[i]||{};
+    return `<div class="ed"><div class="n"><b>${i+1}</b><small>${esc(b.s)}</small></div><input data-k="subj" data-i="${i}" placeholder="Предмет" value="${esc(r.subj)}"><input data-k="room" data-i="${i}" placeholder="Каб." value="${esc(r.room)}"></div>`}).join('');
+  return `<div class="tabs">${[1,2,3,4,5,6].map(d=>`<button data-d="${d}" class="${d==ed?'on':''}">${SH[d]}</button>`).join('')}</div><h3>${DAYS[ed]}</h3>${rows}<p class="mut">Если предмет не заполнен, урок пропускается как «окно». Данные хранятся на этом телефоне.</p>`;
+}
+function vBells(){
+  return '<h3>Время уроков</h3>'+S.bells.map((b,i)=>`<div class="bl"><b>${i+1}</b><input type="time" data-b="${i}.s" value="${esc(b.s)}"><input type="time" data-b="${i}.e" value="${esc(b.e)}"></div>`).join('')+'<div class="btns"><button data-a="add">Добавить урок</button><button data-a="del">Убрать последний</button></div>';
+}
+function vXfer(){
+  return '<h3>Перенос расписания</h3><p class="mut">Чтобы расписание появилось в другом браузере или на другом устройстве: нажми «Показать код», скопируй его, затем открой страницу там и вставь код в поле.</p><div class="btns"><button data-a="show">Показать код</button><button data-a="load">Загрузить из кода</button></div><textarea id="code" rows="7" placeholder="Код расписания"></textarea><p id="msg" class="mut"></p>';
+}
+function render(){
+  app.innerHTML=tab=='week'?vWeek():tab=='bells'?vBells():tab=='xfer'?vXfer():vNow();
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t==tab));
+}
+document.addEventListener('click',e=>{
+  const t=e.target.closest('button');if(!t)return;
+  const d=t.dataset;
+  if(d.t){tab=d.t;window.scrollTo(0,0)}
+  else if(d.go)tab=d.go;
+  else if(d.d)ed=+d.d;
+  else if(d.a=='add'){const l=S.bells[S.bells.length-1],e0=mn(l.e),s=(isNaN(e0)?890:e0)+10;S.bells.push({s:hm(s),e:hm(s+45)});save()}
+  else if(d.a=='del'){if(S.bells.length>1){S.bells.pop();save()}}
+  else if(d.a=='show'){const c=document.getElementById('code');c.value=JSON.stringify(S);c.select();try{navigator.clipboard.writeText(c.value).catch(()=>{})}catch(x){}document.getElementById('msg').textContent='Код готов. Если он не скопировался сам, выдели его и скопируй.';return}
+  else if(d.a=='load'){try{const r=JSON.parse(document.getElementById('code').value);if(!(r&&Array.isArray(r.bells)&&r.bells.length&&r.days))throw 0;S=r;save();tab='now'}catch(x){document.getElementById('msg').textContent='Код не подошёл. Вставь его целиком.';return}}
+  else return;
+  render();
+});
+app.addEventListener('input',e=>{
+  const d=e.target.dataset;
+  if(d.k){const a=S.days[ed]=S.days[ed]||[];a[+d.i]=a[+d.i]||{subj:'',room:''};a[+d.i][d.k]=e.target.value;save()}
+  else if(d.b){const p=d.b.split('.');S.bells[+p[0]][p[1]]=e.target.value;save()}
+});
+setInterval(()=>{if(tab=='now')render()},20000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&tab=='now')render()});
+render();
+</script>
+<script>if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});</script>
+</body>
+</html
